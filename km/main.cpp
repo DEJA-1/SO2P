@@ -45,7 +45,16 @@ public:
     }
 
     void eat(int id) {
-        // eating
+        printState(id, PhilosopherState::HUNGRY);
+
+        int leftFork;
+        int rightFork;
+        pickUpForks(id, leftFork, rightFork);
+
+        printState(id, PhilosopherState::EATING);
+        std::this_thread::sleep_for(std::chrono::milliseconds(eatingTime(rng)));
+
+        putDownForks(leftFork, rightFork);
     }
 
     void run(int seconds) {
@@ -74,6 +83,24 @@ private:
                 philosopher.join();
             }
         }
+    }
+
+    void pickUpForks(int id, int &leftFork, int &rightFork) {
+        leftFork = id;
+        rightFork = (id + 1) % numPhilosophers;
+
+        if (leftFork < rightFork) {
+            forks[leftFork].lock();
+            forks[rightFork].lock();
+        } else {
+            forks[rightFork].lock();
+            forks[leftFork].lock();
+        }
+    }
+
+    void putDownForks(int leftFork, int rightFork) {
+        forks[leftFork].unlock();
+        forks[rightFork].unlock();
     }
 };
 
@@ -104,7 +131,7 @@ int main(int argc, char *argv[]) {
     printSimulationStart(numPhilosophers);
 
     DiningPhilosophers dp(numPhilosophers);
-    dp.run(30);
+    dp.run(10);
 
     printSimulationEnd();
     return 0;
