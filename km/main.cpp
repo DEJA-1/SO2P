@@ -1,3 +1,4 @@
+#include <iomanip>
 #include <iostream>
 #include <thread>
 #include <vector>
@@ -15,6 +16,8 @@ class DiningPhilosophers {
     std::uniform_int_distribution<int> thinkingTime;
     std::uniform_int_distribution<int> eatingTime;
 
+    std::vector<PhilosopherState> states;
+
 public:
     DiningPhilosophers(int n) {
         numPhilosophers = n;
@@ -23,13 +26,26 @@ public:
 
         std::random_device rd;
         rng = std::mt19937(rd());
-        thinkingTime = std::uniform_int_distribution<int>(500, 2000);
-        eatingTime = std::uniform_int_distribution<int>(500, 1500);
+        thinkingTime = std::uniform_int_distribution<int>(2000, 4000);
+        eatingTime = std::uniform_int_distribution<int>(2000, 3000);
+
+        states = std::vector<PhilosopherState>(n, PhilosopherState::THINKING);
     }
 
-    void printState(int id, PhilosopherState state) {
+    void printTable() {
         std::lock_guard<std::mutex> lock(outputMutex);
-        std::cout << "[" << id << "]" << " " << "Philosopher " << "is " << stateToString(state) << std::endl;
+        std::cout << "\r[ ";
+        for (int i = 0; i < numPhilosophers; i++) {
+            std::cout << i << ": " << std::setw(8) << std::left << stateToString(states[i]) << " | ";
+        }
+        std::cout << "]  " << std::flush;
+    }
+
+    void updateState(int id, PhilosopherState state) {
+        if (!running) return;
+
+        states[id] = state;
+        printTable();
     }
 
     void philosopher(int id) {
@@ -40,18 +56,18 @@ public:
     }
 
     void think(int id) {
-        printState(id, PhilosopherState::THINKING);
+        updateState(id, PhilosopherState::THINKING);
         std::this_thread::sleep_for(std::chrono::milliseconds(thinkingTime(rng)));
     }
 
     void eat(int id) {
-        printState(id, PhilosopherState::HUNGRY);
+        updateState(id, PhilosopherState::HUNGRY);
 
         int leftFork;
         int rightFork;
         pickUpForks(id, leftFork, rightFork);
 
-        printState(id, PhilosopherState::EATING);
+        updateState(id, PhilosopherState::EATING);
         std::this_thread::sleep_for(std::chrono::milliseconds(eatingTime(rng)));
 
         putDownForks(leftFork, rightFork);
@@ -78,6 +94,8 @@ private:
     }
 
     static void clearThreads(std::vector<std::thread> &philosophers) {
+        printClearingThreads();
+
         for (auto &philosopher: philosophers) {
             if (philosopher.joinable()) {
                 philosopher.join();
@@ -102,10 +120,16 @@ private:
         forks[leftFork].unlock();
         forks[rightFork].unlock();
     }
+
+    static void printClearingThreads() {
+        std::cout << "\n------------------------------------------------" << std::endl;
+        std::cout << "simulation finishied, clearing threads.." << std::endl;
+        std::cout << "------------------------------------------------" << std::endl;
+    }
 };
 
 void printSimulationEnd() {
-    std::cout << "------------------------------------------------" << std::endl;
+    std::cout << "\n------------------------------------------------" << std::endl;
     std::cout << "simulation completed" << std::endl;
     std::cout << "------------------------------------------------" << std::endl;
 }
@@ -131,7 +155,7 @@ int main(int argc, char *argv[]) {
     printSimulationStart(numPhilosophers);
 
     DiningPhilosophers dp(numPhilosophers);
-    dp.run(10);
+    dp.run(20);
 
     printSimulationEnd();
     return 0;
