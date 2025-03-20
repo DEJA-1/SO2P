@@ -32,22 +32,6 @@ public:
         states = std::vector<PhilosopherState>(n, PhilosopherState::THINKING);
     }
 
-    void printTable() {
-        std::lock_guard<std::mutex> lock(outputMutex);
-        std::cout << "\r[ ";
-        for (int i = 0; i < numPhilosophers; i++) {
-            std::cout << i << ": " << std::setw(8) << std::left << stateToString(states[i]) << " | ";
-        }
-        std::cout << "]  " << std::flush;
-    }
-
-    void updateState(int id, PhilosopherState state) {
-        if (!running) return;
-
-        states[id] = state;
-        printTable();
-    }
-
     void philosopher(int id) {
         while (running) {
             think(id);
@@ -55,6 +39,13 @@ public:
         }
     }
 
+    void run(int seconds) {
+        std::vector<std::thread> philosophers;
+        runPhilosophersOnThreads(philosophers);
+        finishSimulationAfterTimeout(seconds, philosophers);
+    }
+
+private:
     void think(int id) {
         updateState(id, PhilosopherState::THINKING);
         std::this_thread::sleep_for(std::chrono::milliseconds(thinkingTime(rng)));
@@ -73,13 +64,40 @@ public:
         putDownForks(leftFork, rightFork);
     }
 
-    void run(int seconds) {
-        std::vector<std::thread> philosophers;
-        runPhilosophersOnThreads(philosophers);
-        finishSimulationAfterTimeout(seconds, philosophers);
+    void pickUpForks(int id, int &leftFork, int &rightFork) {
+        leftFork = id;
+        rightFork = (id + 1) % numPhilosophers;
+
+        if (leftFork < rightFork) {
+            forks[leftFork].lock();
+            forks[rightFork].lock();
+        } else {
+            forks[rightFork].lock();
+            forks[leftFork].lock();
+        }
     }
 
-private:
+    void putDownForks(int leftFork, int rightFork) {
+        forks[leftFork].unlock();
+        forks[rightFork].unlock();
+    }
+
+    void printTable() {
+        std::lock_guard<std::mutex> lock(outputMutex);
+        std::cout << "\r[ ";
+        for (int i = 0; i < numPhilosophers; i++) {
+            std::cout << i << ": " << std::setw(8) << std::left << stateToString(states[i]) << " | ";
+        }
+        std::cout << "]  " << std::flush;
+    }
+
+    void updateState(int id, PhilosopherState state) {
+        if (!running) return;
+
+        states[id] = state;
+        printTable();
+    }
+
     void runPhilosophersOnThreads(std::vector<std::thread> &philosophers) {
         for (int i = 0; i < numPhilosophers; i++) {
             philosophers.emplace_back(&DiningPhilosophers::philosopher, this, i);
@@ -101,24 +119,6 @@ private:
                 philosopher.join();
             }
         }
-    }
-
-    void pickUpForks(int id, int &leftFork, int &rightFork) {
-        leftFork = id;
-        rightFork = (id + 1) % numPhilosophers;
-
-        if (leftFork < rightFork) {
-            forks[leftFork].lock();
-            forks[rightFork].lock();
-        } else {
-            forks[rightFork].lock();
-            forks[leftFork].lock();
-        }
-    }
-
-    void putDownForks(int leftFork, int rightFork) {
-        forks[leftFork].unlock();
-        forks[rightFork].unlock();
     }
 
     static void printClearingThreads() {
