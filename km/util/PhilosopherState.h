@@ -12,7 +12,7 @@ enum class PhilosopherState {
     EATING
 };
 
-inline std::string stateToString(PhilosopherState state) {
+inline std::string stateToString(const PhilosopherState state) {
     switch (state) {
         case PhilosopherState::THINKING: return "Thinking";
         case PhilosopherState::HUNGRY: return "Hungry";

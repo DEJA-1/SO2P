@@ -3,7 +3,6 @@
 #include <thread>
 #include <vector>
 #include <random>
-
 #include "util/PhilosopherState.h"
 
 class DiningPhilosophers {
@@ -57,7 +56,6 @@ private:
         int leftFork;
         int rightFork;
         pickUpForks(id, leftFork, rightFork);
-
         updateState(id, PhilosopherState::EATING);
         std::this_thread::sleep_for(std::chrono::milliseconds(eatingTime(rng)));
 
