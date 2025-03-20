@@ -3,6 +3,8 @@
 #include <vector>
 #include <random>
 
+#include "util/PhilosopherState.h"
+
 class DiningPhilosophers {
     int numPhilosophers;
     std::vector<std::mutex> forks;
@@ -25,16 +27,21 @@ public:
         eatingTime = std::uniform_int_distribution<int>(500, 1500);
     }
 
-    void printState(int id) {
-        // current state - thinking/eating/hungry
+    void printState(int id, PhilosopherState state) {
+        std::lock_guard<std::mutex> lock(outputMutex);
+        std::cout << "[" << id << "]" << " " << "Philosopher " << "is " << stateToString(state) << std::endl;
     }
 
     void philosopher(int id) {
-        // actions each philosopher make
+        while (running) {
+            think(id);
+            eat(id);
+        }
     }
 
     void think(int id) {
-        // thinking
+        printState(id, PhilosopherState::THINKING);
+        std::this_thread::sleep_for(std::chrono::milliseconds(thinkingTime(rng)));
     }
 
     void eat(int id) {
@@ -42,11 +49,47 @@ public:
     }
 
     void run(int seconds) {
-        // run simulation
+        std::vector<std::thread> philosophers;
+        runPhilosophersOnThreads(philosophers);
+        finishSimulationAfterTimeout(seconds, philosophers);
+    }
+
+private:
+    void runPhilosophersOnThreads(std::vector<std::thread> &philosophers) {
+        for (int i = 0; i < numPhilosophers; i++) {
+            philosophers.emplace_back(&DiningPhilosophers::philosopher, this, i);
+        }
+    }
+
+    void finishSimulationAfterTimeout(const int seconds, std::vector<std::thread> &philosophers) {
+        std::this_thread::sleep_for(std::chrono::seconds(seconds));
+        running = false;
+
+        clearThreads(philosophers);
+    }
+
+    static void clearThreads(std::vector<std::thread> &philosophers) {
+        for (auto &philosopher: philosophers) {
+            if (philosopher.joinable()) {
+                philosopher.join();
+            }
+        }
     }
 };
 
-int main(int argc, char* argv[]) {
+void printSimulationEnd() {
+    std::cout << "------------------------------------------------" << std::endl;
+    std::cout << "simulation completed" << std::endl;
+    std::cout << "------------------------------------------------" << std::endl;
+}
+
+void printSimulationStart(int numPhilosophers) {
+    std::cout << "------------------------------------------------" << std::endl;
+    std::cout << "starting simulation with " << numPhilosophers << " philosophers" << std::endl;
+    std::cout << "------------------------------------------------" << std::endl;
+}
+
+int main(int argc, char *argv[]) {
     if (argc != 2) {
         std::cerr << "Usage: " << argv[0] << " <number_of_philosophers>" << std::endl;
         return 1;
@@ -58,11 +101,11 @@ int main(int argc, char* argv[]) {
         return 1;
     }
 
-    std::cout << "starting simulation with " << numPhilosophers << " philosophers" << std::endl;
+    printSimulationStart(numPhilosophers);
 
     DiningPhilosophers dp(numPhilosophers);
     dp.run(30);
 
-    std::cout << "simulation completed" << std::endl;
+    printSimulationEnd();
     return 0;
 }
