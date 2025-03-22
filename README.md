@@ -7,7 +7,8 @@ First project implements the *Dining Philosophers Problem*. The simulation visua
 ##  How to build
 
 ```bash
-clone repository
+git clone https://github.com/DEJA-1/SO2P.git
+cd SO2P
 mkdir build && cd build
 cmake -G Ninja ..
 ninja
