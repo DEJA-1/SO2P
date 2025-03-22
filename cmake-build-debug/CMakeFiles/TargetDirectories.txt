@@ -1,3 +1,0 @@
-C:/Users/Krzysiek/CLionProjects/SO2P/cmake-build-debug/CMakeFiles/SO2P.dir
-C:/Users/Krzysiek/CLionProjects/SO2P/cmake-build-debug/CMakeFiles/edit_cache.dir
-C:/Users/Krzysiek/CLionProjects/SO2P/cmake-build-debug/CMakeFiles/rebuild_cache.dir
