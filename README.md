@@ -7,7 +7,7 @@ First project implements the *Dining Philosophers Problem*. The simulation visua
 ##  How to build
 
 ```bash
-cd so2p
+clone repository
 mkdir build && cd build
 cmake -G Ninja ..
 ninja
